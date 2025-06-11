@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Port Monitoring System</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Current Port Information</h1>
+    <label for="port-filter">Port Filter:</label>
+    <input type="number" id="port-filter" placeholder="Enter port number">
+    <label for="process-filter">Process Filter:</label>
+    <input type="text" id="process-filter" placeholder="Enter process name">
+    <button onclick="fetchCurrentPorts()">Filter</button>
+    <table id="current-ports-table">
+        <thead>
+            <tr>
+                <th>Port</th>
+                <th>Process</th>
+                <th>Command Line</th>
+                <th>CPU Usage</th>
+                <th>Memory Usage</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h1>Port History Records</h1>
+    <label for="history-limit">Number of Records to Display:</label>
+    <input type="number" id="history-limit" value="100">
+    <label for="history-port-filter">Port Filter:</label>
+    <input type="number" id="history-port-filter" placeholder="Enter port number">
+    <label for="history-process-filter">Process Filter:</label>
+    <input type="text" id="history-process-filter" placeholder="Enter process name">
+    <button onclick="fetchPortHistory()">Filter</button>
+    <table id="port-history-table">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Port</th>
+                <th>Process</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        function fetchCurrentPorts() {
+            const portFilter = document.getElementById('port-filter').value;
+            const processFilter = document.getElementById('process-filter').value;
+            let url = '/api/ports';
+            if (portFilter) {
+                url += `?port=${portFilter}`;
+                if (processFilter) {
+                    url += `&process=${processFilter}`;
+                }
+            } else if (processFilter) {
+                url += `?process=${processFilter}`;
+            }
+
+            fetch(url)
+               .then(response => response.json())
+               .then(data => {
+                    const tableBody = document.getElementById('current-ports-table').getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = '';
+                    data.forEach(port => {
+                        const row = tableBody.insertRow();
+                        const portCell = row.insertCell(0);
+                        const processCell = row.insertCell(1);
+                        const cmdlineCell = row.insertCell(2);
+                        const cpuPercentCell = row.insertCell(3);
+                        const memoryPercentCell = row.insertCell(4);
+
+                        portCell.textContent = port.port;
+                        processCell.textContent = port.process;
+                        cmdlineCell.textContent = port.cmdline;
+                        cpuPercentCell.textContent = port.cpu_percent;
+                        memoryPercentCell.textContent = port.memory_percent;
+                    });
+                });
+        }
+
+        function fetchPortHistory() {
+            const limit = document.getElementById('history-limit').value;
+            const portFilter = document.getElementById('history-port-filter').value;
+            const processFilter = document.getElementById('history-process-filter').value;
+            let url = `/api/history?limit=${limit}`;
+            if (portFilter) {
+                url += `&port=${portFilter}`;
+            }
+            if (processFilter) {
+                url += `&process=${processFilter}`;
+            }
+
+            fetch(url)
+               .then(response => response.json())
+               .then(data => {
+                    const tableBody = document.getElementById('port-history-table').getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = '';
+                    data.forEach(entry => {
+                        const row = tableBody.insertRow();
+                        const timestampCell = row.insertCell(0);
+                        const portCell = row.insertCell(1);
+                        const processCell = row.insertCell(2);
+                        const statusCell = row.insertCell(3);
+
+                        timestampCell.textContent = entry.timestamp;
+                        portCell.textContent = entry.port;
+                        processCell.textContent = entry.process;
+                        statusCell.textContent = entry.status;
+                    });
+                });
+        }
+
+        // Automatically fetch data when the page loads
+        window.onload = function () {
+            fetchCurrentPorts();
+            fetchPortHistory();
+        };
+    </script>
+</body>
+
+</html>
